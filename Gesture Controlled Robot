@@ -1,0 +1,146 @@
+const int xInput = A0;      //Set analog pins for accelerometer //vcc accelerometer --> 3.3V arduino
+const int yInput = A1;                                          //aref arduino --. 3.3V arduino
+const int zInput = A2;
+const int sampleSize = 10;
+
+int RawMin = 0;
+int RawMax = 1023;
+
+//left motor
+const int motor1_fwd = 2;
+const int motor1_bwd = 3;
+
+//right motor
+const int motor2_fwd = 8;
+const int motor2_bwd = 9;
+
+void setup() {
+  Serial.begin(9600);
+  analogReference(EXTERNAL);
+  pinMode(motor1_fwd, OUTPUT); //motor1 is left motor
+  pinMode(motor1_bwd, OUTPUT);
+  pinMode(motor2_fwd, OUTPUT); //motor2 is right motor 
+  pinMode(motor2_bwd, OUTPUT);
+  // put your setup code here, to run once:
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+//CODE TO READ AND PROCESS ACCELEROMETER DATA
+  //Read raw values
+  int xRaw = ReadAxis(xInput);
+  int yRaw = ReadAxis(yInput);
+  int zRaw = ReadAxis(zInput);
+  
+  //convert raw values into millli-Gs
+  long xScaled = map (xRaw, RawMin, RawMax, -3000, 3000);
+  long yScaled = map (yRaw, RawMin, RawMax, -3000, 3000);
+  long zScaled = map (zRaw, RawMin, RawMax, -3000, 3000);
+
+  //convert to fractional Gs
+  float xAccel = xScaled / 1000.0;
+  float yAccel = yScaled / 1000.0;
+  float zAccel = zScaled / 1000.0;
+
+  Serial.print("X, Y, Z  :: ");
+  Serial.print(xRaw);
+  Serial.print(", ");
+  Serial.print(yRaw);
+  Serial.print(", ");
+  Serial.print(zRaw);
+  Serial.print(" :: ");
+  Serial.print(xAccel,2);
+  Serial.print("G, ");
+  Serial.print(yAccel,2);
+  Serial.print("G, ");
+  Serial.print(zAccel,2);
+  Serial.println("G");
+
+  delay(10); 
+
+  //CODE TO GET THE DESIRED OUTPUT FROM MOTORS
+    if (xAccel<(-0.25)){             //FORWARD
+      m1_forward();
+      m2_forward();
+      Serial.print("F");
+    }
+
+    else if(xAccel> 0.25){           //BACKWARD
+      m1_backward();
+      m2_backward();
+      Serial.print("B");
+    }
+
+    else if(yAccel < (-0.25)){       //LEFT
+      m1_backward();
+      m2_forward();
+      Serial.print("L");
+    }
+    
+    else if(yAccel > (0.25)){         //RIGHT
+      m1_forward(); 
+      m2_backward();
+      Serial.print("R");
+    }
+
+   else{       // Robot does not move 
+      m1_stop();
+      m2_stop();
+      Serial.print("STOP");
+    }  
+   
+}   //loop function over
+
+// Initialize digital value of pins
+  void m1_forward()
+  {
+    digitalWrite(motor1_fwd, HIGH);
+    digitalWrite(motor1_bwd, LOW);
+    }
+
+  void m2_forward()
+  { 
+    digitalWrite(motor2_fwd, HIGH);
+    digitalWrite(motor2_bwd, LOW);
+    }
+
+  void m1_backward()
+  {
+    digitalWrite(motor1_fwd, LOW);
+    digitalWrite(motor1_bwd, HIGH);
+    }
+
+  void m2_backward()
+  {
+    digitalWrite(motor2_fwd, LOW);
+    digitalWrite(motor2_bwd, HIGH);
+    }
+
+  void m1_stop()
+  {
+    digitalWrite(motor1_fwd, LOW);
+    digitalWrite(motor1_bwd, LOW);
+    }
+
+  void m2_stop()
+  {
+    digitalWrite(motor2_fwd, LOW);
+    digitalWrite(motor2_bwd, LOW);
+    }
+
+//take samples and return average for ACCELEROMETER
+int ReadAxis(int AxisPin){
+  long reading = 0;
+  analogRead(AxisPin);
+  delay(1);
+
+  for(int i=0; i<sampleSize; i++){
+      reading = reading + analogRead(AxisPin);
+    }
+    Serial.print("Avg reading");
+    Serial.println(reading/sampleSize);
+    return (reading/sampleSize);
+   
+  } 
